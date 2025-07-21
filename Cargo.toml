@@ -1,0 +1,30 @@
+[package]
+name = "inferrous"
+version = "0.1.0"
+edition = "2024"
+
+# Make it both a library and binary
+[lib]
+name = "inferrous"
+path = "src/lib.rs"
+
+[[bin]]
+name = "inferrous"
+path = "src/main.rs"
+
+[dependencies]
+candle-core = { version = "0.8", features = ["accelerate", "metal"] }
+candle-nn = "0.8"
+candle-transformers = "0.8"
+tokenizers = "0.19"
+hf-hub = { version = "0.3", features = ["tokio"] }
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+log = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+target-cpu = "native"
