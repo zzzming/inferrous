@@ -91,11 +91,11 @@ impl SystemInfo {
     /// Get optimal thread count for CPU inference
     pub fn optimal_cpu_threads(&self) -> usize {
         match self.logical_cpus {
-            1..=4 => self.logical_cpus,           // Use all on low-core systems
-            5..=8 => self.logical_cpus - 1,       // Leave 1 core for OS
-            9..=16 => self.logical_cpus - 2,      // Leave 2 cores for OS
-            17..=32 => self.logical_cpus - 4,     // Leave 4 cores for OS on high-end
-            _ => 28,                              // Cap at 28 for extreme systems
+            1..=4 => self.logical_cpus,       // Use all on low-core systems
+            5..=8 => self.logical_cpus - 1,   // Leave 1 core for OS
+            9..=16 => self.logical_cpus - 2,  // Leave 2 cores for OS
+            17..=32 => self.logical_cpus - 4, // Leave 4 cores for OS on high-end
+            _ => 28,                          // Cap at 28 for extreme systems
         }
     }
 
@@ -120,13 +120,16 @@ impl SystemInfo {
         #[cfg(any(target_os = "linux", target_os = "macos"))]
         {
             if let Ok(contents) = std::fs::read_to_string("/proc/cpuinfo") {
-                let count = contents.lines()
+                let count = contents
+                    .lines()
                     .filter(|line| line.starts_with("processor"))
                     .count();
-                if count > 0 { return count; }
+                if count > 0 {
+                    return count;
+                }
             }
         }
-        
+
         // Ultimate fallback
         1
     }
@@ -134,12 +137,12 @@ impl SystemInfo {
     #[cfg(target_os = "macos")]
     fn macos_physical_cpus() -> Option<usize> {
         use std::process::Command;
-        
+
         let output = Command::new("sysctl")
             .args(&["-n", "hw.physicalcpu"])
             .output()
             .ok()?;
-            
+
         let count_str = String::from_utf8_lossy(&output.stdout);
         count_str.trim().parse().ok()
     }
@@ -147,7 +150,7 @@ impl SystemInfo {
     #[cfg(target_os = "linux")]
     fn linux_physical_cpus() -> Option<usize> {
         let contents = std::fs::read_to_string("/proc/cpuinfo").ok()?;
-        
+
         // Count unique physical IDs
         let mut physical_ids = std::collections::HashSet::new();
         for line in contents.lines() {
@@ -157,27 +160,27 @@ impl SystemInfo {
                 }
             }
         }
-        
+
         Some(physical_ids.len().max(1))
     }
 
     #[cfg(target_os = "macos")]
     fn macos_metal_gpus() -> usize {
         use std::process::Command;
-        
+
         // Use system_profiler to detect GPUs
         if let Ok(output) = Command::new("system_profiler")
             .args(&["SPDisplaysDataType"])
             .output()
         {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            
+
             // Look for Apple Silicon GPU indicators
             if output_str.contains("Apple M") || output_str.contains("Metal") {
                 return 1; // M-series chips have 1 integrated GPU
             }
         }
-        
+
         // Fallback: assume M-series has GPU
         if std::env::consts::ARCH == "aarch64" {
             1
@@ -189,15 +192,16 @@ impl SystemInfo {
     /// Detect NVIDIA GPUs via nvidia-smi
     fn nvidia_gpu_count() -> Option<usize> {
         use std::process::Command;
-        
+
         let output = Command::new("nvidia-smi")
-            .args(&["-L"])  // List GPUs
+            .args(&["-L"]) // List GPUs
             .output()
             .ok()?;
-            
+
         if output.status.success() {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            let count = output_str.lines()
+            let count = output_str
+                .lines()
                 .filter(|line| line.contains("GPU"))
                 .count();
             Some(count)
@@ -209,15 +213,16 @@ impl SystemInfo {
     /// Detect AMD GPUs via rocm-smi
     fn amd_gpu_count() -> Option<usize> {
         use std::process::Command;
-        
+
         let output = Command::new("rocm-smi")
-            .args(&["-i"])  // Show GPU info
+            .args(&["-i"]) // Show GPU info
             .output()
             .ok()?;
-            
+
         if output.status.success() {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            let count = output_str.lines()
+            let count = output_str
+                .lines()
                 .filter(|line| line.contains("GPU"))
                 .count();
             Some(count)
@@ -231,16 +236,12 @@ impl SystemInfo {
     fn linux_drm_gpu_count() -> Option<usize> {
         let drm_path = "/sys/class/drm";
         let entries = std::fs::read_dir(drm_path).ok()?;
-        
+
         let count = entries
             .filter_map(|entry| entry.ok())
-            .filter(|entry| {
-                entry.file_name()
-                    .to_string_lossy()
-                    .starts_with("card")
-            })
+            .filter(|entry| entry.file_name().to_string_lossy().starts_with("card"))
             .count();
-            
+
         if count > 0 { Some(count) } else { None }
     }
 
@@ -253,12 +254,16 @@ impl SystemInfo {
 // Display formatting
 impl fmt::Display for SystemInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CPUs: {} logical, {} physical", self.logical_cpus, self.physical_cpus)?;
-        
+        write!(
+            f,
+            "CPUs: {} logical, {} physical",
+            self.logical_cpus, self.physical_cpus
+        )?;
+
         if self.total_accelerators() > 0 {
             write!(f, ", GPUs: ")?;
             let mut gpu_parts = Vec::new();
-            
+
             if self.metal_gpus > 0 {
                 gpu_parts.push(format!("{} Metal", self.metal_gpus));
             }
@@ -268,10 +273,10 @@ impl fmt::Display for SystemInfo {
             if self.rocm_gpus > 0 {
                 gpu_parts.push(format!("{} ROCm", self.rocm_gpus));
             }
-            
+
             write!(f, "{}", gpu_parts.join(", "))?;
         }
-        
+
         Ok(())
     }
 }

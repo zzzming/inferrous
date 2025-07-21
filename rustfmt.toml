@@ -1,0 +1,20 @@
+# Rust formatting configuration (stable features only)
+# Similar to .gofmt but for Rust
+
+# Edition to use  
+edition = "2021"
+
+# Maximum line width
+max_width = 100
+
+# Indent with 4 spaces (Rust standard)
+tab_spaces = 4
+
+# Use spaces for indentation
+hard_tabs = false
+
+# Reorder imports
+reorder_imports = true
+
+# Function parameters
+fn_params_layout = "Tall"
