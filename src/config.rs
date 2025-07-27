@@ -1,6 +1,7 @@
 use crate::cpu::{AcceleratorType, SystemInfo};
 use anyhow::Result;
 use std::path::{Path, PathBuf};
+use std::cmp;
 
 /// Configuration for the Inferrous engine
 /// Similar to a Go struct but with Rust ownership semantics
@@ -126,8 +127,15 @@ impl Config {
     /// Apply environment variable settings
     pub fn apply_env_settings(&self) -> Result<()> {
         unsafe {
-            std::env::set_var("RAYON_NUM_THREADS", self.rayon_threads.to_string());
-            std::env::set_var("OMP_NUM_THREADS", self.omp_threads.to_string());
+            let rayon_threads = self.rayon_threads.to_string();
+            let omp_threads = self.omp_threads.to_string();
+            let optimal_threads = cmp::min(self.rayon_threads, self.omp_threads).to_string();
+            
+            println!("Setting RAYON_NUM_THREADS = {}", rayon_threads);
+            std::env::set_var("RAYON_NUM_THREADS", &optimal_threads);
+            
+            println!("Setting OMP_NUM_THREADS = {}", omp_threads);
+            std::env::set_var("OMP_NUM_THREADS", &optimal_threads);
         }
         Ok(())
     }
