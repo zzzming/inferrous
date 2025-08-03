@@ -1,27 +1,39 @@
 [package]
 name = "inferrous"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["Ming Luo <itestmycode@gmail.com>"]
+description = "A fast and efficient Rust library for running ML inference using the Candle framework"
+readme = "README.md"
+homepage = "https://github.com/zzzming/inferrous"
+repository = "https://github.com/zzzming/inferrous"
+license = "Apache-2.0"
+keywords = ["machine-learning", "inference", "llm", "ai"]
+categories = ["science", "algorithms"]
 
-# Make it both a library and binary
+# Library only
 [lib]
 name = "inferrous"
 path = "src/lib.rs"
 
-[[bin]]
-name = "inferrous"
-path = "src/main.rs"
-
 [dependencies]
-candle-core = { version = "0.8", features = ["accelerate", "metal"] }
-candle-nn = "0.8"
-candle-transformers = "0.8"
-tokenizers = "0.19"
-hf-hub = { version = "0.3", features = ["tokio"] }
 anyhow = "1.0"
-tokio = { version = "1.0", features = ["full"] }
 log = "0.4"
-rand = "0.8"
+env_logger = "0.11"
+serde_json = "1.0"
+
+# Optional Candle dependencies for comparison
+candle-core = { version = "0.8", features = ["metal"], optional = true }
+candle-nn = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
+tokenizers = { version = "0.19", optional = true }
+serde = "1.0.219"
+
+[features]
+default = ["candle", "tokenizers", "metal"]
+candle = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers"]
+tokenizers = ["dep:tokenizers"]
+metal = ["candle-core?/metal"]
 
 [profile.release]
 opt-level = 3
